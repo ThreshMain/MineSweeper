@@ -14,10 +14,10 @@ let game;
 
 function preload() {
     font = loadFont("font\\SFTransRobotics.ttf");
-    images[Cell.drawValues.explode]=loadImage("images\\ExplodedBomb.png")
-    images[Cell.drawValues.unknown]=loadImage("images\\UnOpened.png")
-    images[Cell.drawValues.flag]=loadImage("images\\Flag.png")
-    images[Cell.drawValues.mine]=loadImage("images\\Mine.png")
+    images[Cell.drawValues.explode] = loadImage("images\\ExplodedBomb.png")
+    images[Cell.drawValues.unknown] = loadImage("images\\UnOpened.png")
+    images[Cell.drawValues.flag] = loadImage("images\\Flag.png")
+    images[Cell.drawValues.mine] = loadImage("images\\Mine.png")
     lostSound = new Audio("Sound\\Grenade.mp3");
     winSound = new Audio("Sound\\Win.mp3");
 }
