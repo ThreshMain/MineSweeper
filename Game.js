@@ -60,12 +60,23 @@ class Game {
                         }
                     }
                 }
-                if(this.getMinesNextTo(cell.x, cell.y) === 0){
+                if (this.getMinesNextTo(cell.x, cell.y) === 0) {
                     exploreEmpty(x, y, beenTo);
-                }else{
-                    cell.drawValue=Cell.drawValues.empty;
+                } else {
+                    cell.drawValue = Cell.drawValues.empty;
                 }
             }
+        }
+        let foundMinesCount = 0;
+        this.board.forEach((line) => {
+            line.forEach((cell) => {
+                if (cell.drawValue === Cell.drawValues.flag && cell.value === Cell.values.mine) {
+                    foundMinesCount++;
+                }
+            })
+        });
+        if (foundMinesCount === this.board.numberOfMines) {
+            this.status = Game.gameStatus.win;
         }
         return this.status;
     }

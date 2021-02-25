@@ -42,20 +42,8 @@ function startWithMoreArg(seed, sizeX, sizeY) {
 }
 
 function win() {
-    let foundMinesCount = 0;
-    game.board.forEach((line) => {
-        line.forEach((cell) => {
-            if (cell.drawValue === Cell.drawValues.flag && cell.value === Cell.values.mine) {
-                foundMinesCount++;
-            }
-        })
-    });
-    if (foundMinesCount === game.board.numberOfMines) {
-        winSound.play();
-        winSound = new Audio("Sound\\Win.mp3");
-        return true;
-    }
-    return false;
+    winSound.play();
+    winSound = new Audio("Sound\\Win.mp3");
 }
 
 function lose() {
@@ -78,6 +66,9 @@ document.addEventListener("click", function (evt) {
             clickX = Math.floor(clickX / helpX);
             clickY = Math.floor(clickY / helpY);
             game.processCell(clickX, clickY);
+            if (game.flagCell(clickX, clickY) === Game.gameStatus.lost) {
+                lose();
+            }
         }
     }
 });
@@ -100,7 +91,9 @@ document.addEventListener(
             } else {
                 clickX = Math.floor(clickX / helpX);
                 clickY = Math.floor(clickY / helpY);
-                game.flagCell(clickX, clickY);
+                if (game.flagCell(clickX, clickY) === Game.gameStatus.win) {
+                    win();
+                }
             }
         }
     },
