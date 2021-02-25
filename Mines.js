@@ -1,34 +1,24 @@
 "use strict";
-let mine = [];
-let drawArr = [];
-let saveDrawArr = [];
-let help = 0;
 let helpX = 0;
 let helpY = 0;
 let canvas;
-let seedSeeds;
-let sizeX;
-let sizeY;
-let minesCount;
-let reset = false;
-let images = [];
-let audio;
-let winSound;
+
+let images = {};
 let font;
 
-function SaveValue(x, y, value) {
-    this.xCoord = x;
-    this.yCoord = y;
-    this.value = value;
-}
+let lostSound;
+let winSound;
+
+let game;
+
 
 function preload() {
     font = loadFont("font\\SFTransRobotics.ttf");
-    images[0] = loadImage("images\\UnOpened.png");
-    images[1] = loadImage("images\\Mine.jpg");
-    images[2] = loadImage("images\\MineFound.jpg");
-    images[3] = loadImage("images\\ExplodedBomb.png");
-    audio = new Audio("Sound\\Grenade.mp3");
+    images[Cell.drawValues.explode]=loadImage("images\\ExplodedBomb.png")
+    images[Cell.drawValues.unknown]=loadImage("images\\UnOpened.png")
+    images[Cell.drawValues.flag]=loadImage("images\\Flag.png")
+    images[Cell.drawValues.mine]=loadImage("images\\Mine.png")
+    lostSound = new Audio("Sound\\Grenade.mp3");
     winSound = new Audio("Sound\\Win.mp3");
 }
 
@@ -46,46 +36,21 @@ function start(seed, size) {
 }
 
 function startWithMoreArg(seed, sizeX, sizeY) {
-    saveDrawArr = [];
-    minesCount = 0;
-    seedSeeds = seed;
-    let done = false;
-    mine = [];
-    drawArr = [];
-    for (let x = 0; x < sizeX; x++) {
-        let line = [];
-        let zeroLine = [];
-        for (let y = 0; y < sizeY; y++) {
-            zeroLine.push(-1);
-            if (Math.floor(Math.random() * seed) === 1) {
-                line.push(1);
-                minesCount++;
-            } else {
-                line.push(0);
-            }
-        }
-        done = true;
-        mine.push(line);
-        drawArr.push(zeroLine);
-    }
-    help = width / sizeX;
+    game = new Game(seed, sizeX, sizeY);
     helpX = width / sizeX;
     helpY = height / sizeY;
 }
 
 function win() {
-    let saveMineCount = 0;
-    let bool = true;
-    saveDrawArr.forEach((p) => {
-        if (p !== undefined) {
-            if (mine[p.xCoord][p.yCoord] === 1) {
-                saveMineCount++;
-            } else {
-                bool = false;
+    let foundMinesCount = 0;
+    game.board.forEach((line) => {
+        line.forEach((cell) => {
+            if (cell.drawValue === Cell.drawValues.flag && cell.value === Cell.values.mine) {
+                foundMinesCount++;
             }
-        }
+        })
     });
-    if (saveMineCount === minesCount && bool) {
+    if (foundMinesCount === game.board.numberOfMines) {
         winSound.play();
         winSound = new Audio("Sound\\Win.mp3");
         return true;
@@ -94,155 +59,8 @@ function win() {
 }
 
 function lose() {
-    audio.play();
-    for (let x = 0; x < sizeX; x++) {
-        for (let y = 0; y < sizeY; y++) {
-            if (drawArr[x][y] === -3 && mine[x][y] === 1) {
-                mine[x][y] = -3;
-            }
-        }
-    }
-    audio = new Audio("Sound\\Grenade.mp3");
-    drawArr = mine;
-}
-
-function mineFound(x, y) {
-    if (drawArr[x][y] === -3) {
-        saveDrawArr = saveDrawArr.filter((o) => forEachFromSaveDrawArr(o, x, y));
-    } else {
-        saveDrawArr.push(new SaveValue(x, y, drawArr[x][y]));
-        drawArr[x][y] = -3;
-    }
-}
-
-function forEachFromSaveDrawArr(o, x, y) {
-    if (o !== undefined) {
-        if (o.yCoord === y && o.xCoord === x) {
-            drawArr[x][y] = o.value;
-            return undefined;
-        } else {
-            return o;
-        }
-    }
-    return undefined;
-}
-
-function drawGrey(o, p) {
-    beenTo = [];
-    for (let x = 0; x < sizeX; x++) {
-        let zeroLine = [];
-        for (let y = 0; y < sizeY; y++) {
-            zeroLine.push(0);
-        }
-        beenTo.push(zeroLine);
-    }
-    drawGreyAgain(o, p);
-}
-
-let beenTo;
-
-function drawGreyAgain(x, y) {
-    if (drawArr[x][y] !== -2) {
-        drawArr[x][y] = mine[x][y];
-    }
-    beenTo[x][y] = 1;
-    if (x < sizeX - 1) {
-        if (beenTo[x + 1][y] === 0) {
-            if (
-                mine[x + 1][y] === 0 &&
-                (getMinesNextTo(x, y) < 1 || drawArr[x + 1][y] !== -1)
-            ) {
-                drawGreyAgain(x + 1, y);
-            } else {
-                drawArr[x][y] = -2;
-            }
-        }
-        if (y > 0) {
-            if (beenTo[x + 1][y - 1] === 0) {
-                if (
-                    mine[x + 1][y - 1] === 0 &&
-                    (getMinesNextTo(x, y) < 1 || drawArr[x + 1][y - 1] !== -1)
-                ) {
-                    drawGreyAgain(x + 1, y - 1);
-                } else {
-                    drawArr[x][y] = -2;
-                }
-            }
-        }
-        if (y < sizeY) {
-            if (beenTo[x + 1][y + 1] === 0) {
-                if (
-                    mine[x + 1][y + 1] === 0 &&
-                    (getMinesNextTo(x, y) < 1 || drawArr[x + 1][y + 1] !== -1)
-                ) {
-                    drawGreyAgain(x + 1, y + 1);
-                } else {
-                    drawArr[x][y] = -2;
-                }
-            }
-        }
-    }
-
-    if (x > 0) {
-        if (beenTo[x - 1][y] === 0) {
-            if (
-                mine[x - 1][y] === 0 &&
-                (getMinesNextTo(x, y) < 1 || drawArr[x - 1][y] !== -1)
-            ) {
-                drawGreyAgain(x - 1, y);
-            } else {
-                drawArr[x][y] = -2;
-            }
-        }
-        if (y > 0) {
-            if (beenTo[x - 1][y - 1] === 0) {
-                if (
-                    mine[x - 1][y - 1] === 0 &&
-                    (getMinesNextTo(x, y) < 1 || drawArr[x - 1][y - 1] !== -1)
-                ) {
-                    drawGreyAgain(x - 1, y - 1);
-                } else {
-                    drawArr[x][y] = -2;
-                }
-            }
-        }
-        if (y < sizeY) {
-            if (beenTo[x - 1][y + 1] === 0) {
-                if (
-                    mine[x - 1][y + 1] === 0 &&
-                    (getMinesNextTo(x, y) < 1 || drawArr[x - 1][y + 1] !== -1)
-                ) {
-                    drawGreyAgain(x - 1, y + 1);
-                } else {
-                    drawArr[x][y] = -2;
-                }
-            }
-        }
-    }
-    if (y < sizeY) {
-        if (beenTo[x][y + 1] === 0) {
-            if (
-                mine[x][y + 1] === 0 &&
-                (getMinesNextTo(x, y) < 1 || drawArr[x][y + 1] !== -1)
-            ) {
-                drawGreyAgain(x, y + 1);
-            } else {
-                drawArr[x][y] = -2;
-            }
-        }
-    }
-    if (y > 0) {
-        if (beenTo[x][y - 1] === 0) {
-            if (
-                mine[x][y - 1] === 0 &&
-                (getMinesNextTo(x, y) < 1 || drawArr[x][y - 1] !== -1)
-            ) {
-                drawGreyAgain(x, y - 1);
-            } else {
-                drawArr[x][y] = -2;
-            }
-        }
-    }
+    lostSound.play();
+    lostSound = new Audio("Sound\\Grenade.mp3");
 }
 
 document.addEventListener("click", function (evt) {
@@ -254,22 +72,12 @@ document.addEventListener("click", function (evt) {
         clickX < canvas.width &&
         clickY < canvas.height
     ) {
-        if (reset) {
-            startWithMoreArg(seedSeeds, sizeX, sizeY);
-            reset = false;
+        if (game.status !== Game.gameStatus.inGame) {
+            game.restartGame();
         } else {
             clickX = Math.floor(clickX / helpX);
             clickY = Math.floor(clickY / helpY);
-            if (drawArr[clickX][clickY] !== -3) {
-                if (mine[clickX][clickY] === 1) {
-                    mine[clickX][clickY] = 2;
-                    lose();
-                    console.log("prohra");
-                    reset = true;
-                } else {
-                    drawGrey(clickX, clickY);
-                }
-            }
+            game.processCell(clickX, clickY);
         }
     }
 });
@@ -286,20 +94,13 @@ document.addEventListener(
             clickY < canvas.height
         ) {
             ev.preventDefault();
-            clickX = Math.floor(clickX / helpX);
-            clickY = Math.floor(clickY / helpY);
-            if (reset) {
-                startWithMoreArg(seedSeeds, sizeX, sizeY);
-                reset = false;
+
+            if (game.status !== Game.gameStatus.inGame) {
+                game.restartGame();
             } else {
-                if (drawArr[clickX][clickY] === -1 || drawArr[clickX][clickY] === -3) {
-                    mineFound(clickX, clickY);
-                    if (win()) {
-                        reset = true;
-                        drawArr = mine;
-                        console.log("WIN");
-                    }
-                }
+                clickX = Math.floor(clickX / helpX);
+                clickY = Math.floor(clickY / helpY);
+                game.flagCell(clickX, clickY);
             }
         }
     },
@@ -307,89 +108,41 @@ document.addEventListener(
 );
 
 function draw() {
-    if (!reset) {
-        saveDrawArr.forEach((ele) => {
-            drawArr[ele.xCoord][ele.yCoord] = -3;
-        });
-    }
     background(220);
     fill(0, 255, 0);
-    stroke(100);
-    let x;
-    let y;
-    for (x = 0; x < mine.length; x++) {
-        for (y = 0; y < mine[x].length; y++) {
-            switch (drawArr[x][y]) {
-                case -3:
-                    image(images[2], x * helpX, y * helpY, helpX, helpY);
+    for (let x = 0; x < game.board.length; x++) {
+        for (let y = 0; y < game.board[x].length; y++) {
+            let cell = game.board[x][y];
+            switch (cell.drawValue) {
+                case Cell.drawValues.flag:
+                    image(images[cell.drawValue], x * helpX, y * helpY, helpX, helpY);
                     break;
-                case -2:
+                case Cell.drawValues.unknown:
+                    image(images[cell.drawValue], x * helpX, y * helpY, helpX, helpY);
+                    break;
+                case Cell.drawValues.explode:
+                    image(images[cell.drawValue], x * helpX, y * helpY, helpX, helpY);
+                    break;
+                case Cell.drawValues.mine:
+                    image(images[cell.mine], x * helpX, y * helpY, helpX, helpY);
+                    break;
+                case Cell.drawValues.empty:
                     fill(150);
+                    stroke(100);
                     rect(x * helpX, y * helpY, (x + 1) * helpX, (y + 1) * helpY);
-                    break;
-                case -1:
-                    image(images[0], x * helpX, y * helpY, helpX, helpY);
-                    break;
-                case 0:
-                    fill(150);
-                    rect(x * helpX, y * helpY, (x + 1) * helpX, (y + 1) * helpY);
-                    break;
-                case 1:
-                    image(images[1], x * helpX + 1, y * helpY + 1, helpX - 2, helpY - 2);
-                    break;
-                case 2:
-                    image(images[3], x * helpX + 1, y * helpY + 1, helpX - 2, helpY - 2);
                     break;
             }
-        }
-    }
-    stroke(255, 0, 0);
-    fill(0);
-    for (x = 0; x < mine.length; x++) {
-        for (y = 0; y < mine[0].length; y++) {
-            if (drawArr[x][y] === -2) {
-                let amount = getMinesNextTo(x, y);
-                drawCount(amount, x * helpX, y * helpY, helpX, helpY);
-                if (x < sizeX - 1) {
-                    if (drawArr[x + 1][y] === 0) {
-                        x += 1;
-                        amount = getMinesNextTo(x, y);
-                        drawCount(amount, x * helpX, y * helpY, helpX, helpY);
-                        x -= 1;
-                    }
-                }
-                if (x > 0) {
-                    if (drawArr[x - 1][y] === 0) {
-                        x -= 1;
-                        amount = getMinesNextTo(x, y);
-                        drawCount(amount, x * helpX, y * helpY, helpX, helpY);
-                        x += 1;
-                    }
-                }
-                if (y < sizeY - 1) {
-                    if (drawArr[x][y + 1] === 0) {
-                        y += 1;
-                        amount = getMinesNextTo(x, y);
-                        drawCount(amount, x * helpX, y * helpY, helpX, helpY);
-                        y -= 1;
-                    }
-                }
-                if (y > 0) {
-                    if (drawArr[x][y - 1] === 0) {
-                        y -= 1;
-                        amount = getMinesNextTo(x, y);
-                        drawCount(amount, x * helpX, y * helpY, helpX, helpY);
-                        y += 1;
-                    }
-                }
+            if (cell.drawValue === Cell.drawValues.empty) {
+                let amount = game.getMinesNextTo(x, y);
+                drawAmount(amount, x * helpX, y * helpY, helpX, helpY);
             }
         }
     }
 }
 
-function drawCount(count, a, b, c, d) {
+function drawAmount(amount, a, b, c, d) {
     noStroke();
-    switch (count) {
+    switch (amount) {
         case 0:
             return;
         case 1:
@@ -417,35 +170,6 @@ function drawCount(count, a, b, c, d) {
             fill(60, 60, 60);
             break;
     }
-    text(count, a + helpX * 0.1, b, c, d);
-    text(count, a + helpX * 0.1, b, c, d);
+    text(amount, a + helpX * 0.1, b, c, d);
 }
 
-function getMinesNextTo(x, y) {
-    let amount = 0;
-    if (x < sizeX - 1) {
-        if (y < sizeY - 1) {
-            if (mine[x + 1][y + 1] === 1) amount++;
-        }
-        if (mine[x + 1][y] === 1) amount++;
-        if (y > 0) {
-            if (mine[x + 1][y - 1] === 1) amount++;
-        }
-    }
-    if (y > 0) {
-        if (mine[x][y - 1] === 1) amount++;
-    }
-    if (y < sizeY - 1) {
-        if (mine[x][y + 1] === 1) amount++;
-    }
-    if (x > 0) {
-        if (y < sizeY - 1) {
-            if (mine[x - 1][y + 1] === 1) amount++;
-        }
-        if (mine[x - 1][y] === 1) amount++;
-        if (y > 0) {
-            if (mine[x - 1][y - 1] === 1) amount++;
-        }
-    }
-    return amount;
-}
