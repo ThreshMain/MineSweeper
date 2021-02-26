@@ -14,7 +14,7 @@ class Game {
             for (let y = 0; y < this.sizeY; y++) {
                 if (Math.floor(Math.random() * this.seed) === 1) {
                     line.push(new Cell(x, y, Cell.values.mine));
-                    this.board.numberOfMines++;
+                    this.numberOfMines++;
                 } else {
                     line.push(new Cell(x, y, Cell.values.empty));
                 }
@@ -67,17 +67,6 @@ class Game {
                 }
             }
         }
-        let foundMinesCount = 0;
-        this.board.forEach((line) => {
-            line.forEach((cell) => {
-                if (cell.drawValue === Cell.drawValues.flag && cell.value === Cell.values.mine) {
-                    foundMinesCount++;
-                }
-            })
-        });
-        if (foundMinesCount === this.board.numberOfMines) {
-            this.status = Game.gameStatus.win;
-        }
         return this.status;
     }
 
@@ -91,6 +80,22 @@ class Game {
             cell.drawValue = Cell.drawValues.unknown;
         } else if (cell.drawValue === Cell.drawValues.unknown) {
             cell.drawValue = Cell.drawValues.flag;
+        }
+        let foundMinesCount = 0;
+        let incorrectFlag=false;
+        this.board.forEach((line) => {
+            line.forEach((cell) => {
+                if (cell.drawValue === Cell.drawValues.flag) {
+                    if(cell.value === Cell.values.mine){
+                        foundMinesCount++;
+                    }else{
+                        incorrectFlag=true;
+                    }
+                }
+            })
+        });
+        if (foundMinesCount === this.numberOfMines&&!incorrectFlag) {
+            this.status = Game.gameStatus.win;
         }
         return this.status;
     }
